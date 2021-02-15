@@ -1,0 +1,43 @@
+#!/bin/bash
+
+DOCKER_IMAGE=s4ros/aws-vault
+AWS_VAULT_PATH=${HOME}/.awsvault
+ENV_DIR=${AWS_VAULT_PATH}/env
+
+# use --backend=file by default
+INPUT=$(echo $1 | cut -d '=' -f 1)
+case ${INPUT} in
+    --backend)
+        BACKEND=""
+        ;;
+    *)
+        BACKEND="--backend=file"
+esac
+
+test -d ${AWS_VAULT_PATH} || mkdir ${AWS_VAULT_PATH}
+test -d ${ENV_DIR} || mkdir ${ENV_DIR}
+
+INPUT="$@"
+
+echo $INPUT
+SRCH="\-\-"
+CMD=${INPUT##*${SRCH}}
+AWS_VAULT_CMD=${INPUT%%${SRCH}*}
+
+docker run --rm -it \
+-v ${HOME}/.aws:/root/.aws:ro \
+-v ${AWS_VAULT_PATH}:/root/.awsvault \
+-v ${ENV_DIR}:/tmp/env \
+${DOCKER_IMAGE} aws-vault ${BACKEND} ${AWS_VAULT_CMD} -- env
+
+set -a
+source ${ENV_DIR}/aws-vault
+set +a
+echo
+${CMD}
+
+### TODO:
+# - execute aws-vault, take out the AWS_* ENV vars
+# - source exported ENV vars from aws-vault
+# - execute command on the right of "--", those will probably be aws-cli
+#   or anything that needs AWS access
