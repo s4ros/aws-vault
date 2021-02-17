@@ -21,7 +21,7 @@ INPUT="$@"
 
 echo $INPUT
 SRCH="\-\-"
-CMD=${INPUT##*${SRCH}}
+CMD=${INPUT#*${SRCH}}
 AWS_VAULT_CMD=${INPUT%%${SRCH}*}
 
 docker run --rm -it \
@@ -35,4 +35,3 @@ source ${ENV_DIR}/aws-vault
 set +a
 echo
 ${CMD}
-
