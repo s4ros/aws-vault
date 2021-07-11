@@ -5,30 +5,44 @@ AWS_VAULT_PATH=${HOME}/.awsvault
 ENV_DIR=${AWS_VAULT_PATH}/env
 
 # use --backend=file by default
-INPUT=$(echo $1 | cut -d '=' -f 1)
-case ${INPUT} in
-    --backend)
-        BACKEND=""
-        ;;
-    *)
-        BACKEND="--backend=file"
-esac
+# INPUT=$(echo $1 | cut -d '=' -f 1)
+# case ${INPUT} in
+#     --backend)
+#         BACKEND="$1"
+#         ;;
+#     *)
+#         BACKEND="--backend=file"
+# esac
 
 test -d ${AWS_VAULT_PATH} || mkdir ${AWS_VAULT_PATH}
 test -d ${ENV_DIR} || mkdir ${ENV_DIR}
 
 INPUT="$@"
 
+
+echo INPUT
 echo $INPUT
 SRCH="\-\-"
-CMD=${INPUT#*${SRCH}}
-AWS_VAULT_CMD=${INPUT%%${SRCH}*}
+set -x
+CMD=${INPUT##*${SRCH}}
+AWS_VAULT_CMD=${INPUT%${SRCH}*}
+
+EXEC_ENV=""
+if [[ -z $AWS_VAULT_CMD ]]; then
+    AWS_VAULT_CMD=${INPUT}
+    CMD=""
+elif [[ "exec" == *"${AWS_VAULT_CMD}"* ]]; then
+    EXEC_ENV="-- env"
+fi
 
 docker run --rm -it \
--v ${HOME}/.aws:/root/.aws:ro \
--v ${AWS_VAULT_PATH}:/root/.awsvault \
+--user $(id -u) \
+-e DBUS_SESSION_BUS_ADDRESS \
+-v ${HOME}/.aws:/home/aws-user/.aws:ro \
+-v ${AWS_VAULT_PATH}:/home/aws-user/.awsvault \
 -v ${ENV_DIR}:/tmp/env \
-${DOCKER_IMAGE} aws-vault ${BACKEND} ${AWS_VAULT_CMD} -- env
+-v /run/user/$(id -u)/bus:/run/user/$(id -u)/bus \
+${DOCKER_IMAGE} aws-vault ${BACKEND} ${AWS_VAULT_CMD} ${EXEC_ENV}
 
 set -a
 source ${ENV_DIR}/aws-vault
