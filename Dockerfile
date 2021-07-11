@@ -10,6 +10,7 @@ COPY entrypoint.sh /entrypoint.sh
 
 RUN adduser -h /home/${USER} -D -u 1000 ${USER}
 USER ${USER}
+LABEL sraka
 
 # CMD ["/usr/bin/aws-vault"]
 ENTRYPOINT [ "/entrypoint.sh" ]
